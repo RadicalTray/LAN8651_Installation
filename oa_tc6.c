@@ -9,7 +9,10 @@
 #include <linux/iopoll.h>
 #include <linux/mdio.h>
 #include <linux/phy.h>
-#include <linux/oa_tc6.h>
+#include "oa_tc6.h"
+
+/* Modified */
+#define MDIO_MMD_POWER_UNIT 13 /* PHY POWER UNIT */
 
 /* OPEN Alliance TC6 registers */
 /* Standard Capabilities Register */

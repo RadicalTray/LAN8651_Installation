@@ -8,7 +8,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/phy.h>
-#include <linux/oa_tc6.h>
+#include "oa_tc6.h"
 
 #define DRV_NAME			"lan8650"
 
