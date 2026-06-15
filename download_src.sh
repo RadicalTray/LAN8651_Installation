@@ -2,7 +2,7 @@
 
 URL=https://raw.githubusercontent.com/torvalds/linux/refs/tags/v6.18
 
-rm *.c *.h
+rm lan865x.c microchip_t1s.c oa_tc6.c oa_tc6.h
 
 wget ${URL}/drivers/net/ethernet/microchip/lan865x/lan865x.c
 wget ${URL}/drivers/net/phy/microchip_t1s.c
