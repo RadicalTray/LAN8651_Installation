@@ -11,9 +11,6 @@
 #include <linux/phy.h>
 #include "oa_tc6.h"
 
-/* Modified */
-#define MDIO_MMD_POWER_UNIT 13 /* PHY POWER UNIT */
-
 /* OPEN Alliance TC6 registers */
 /* Standard Capabilities Register */
 #define OA_TC6_REG_STDCAP			0x0002
