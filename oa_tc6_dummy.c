@@ -159,6 +159,7 @@ enum oa_tc6_data_end_valid_info {
 static int oa_tc6_spi_transfer(struct oa_tc6 *tc6,
 			       enum oa_tc6_header_type header_type, u16 length)
 {
+	dev_info(&tc6->spi->dev, "oa_tc6_spi_transfer(): start\n");
 	struct spi_transfer xfer = { 0 };
 	struct spi_message msg;
 
@@ -174,6 +175,7 @@ static int oa_tc6_spi_transfer(struct oa_tc6 *tc6,
 	spi_message_init(&msg);
 	spi_message_add_tail(&xfer, &msg);
 
+	dev_info(&tc6->spi->dev, "oa_tc6_spi_transfer(): returning spi_sync()\n");
 	return spi_sync(tc6->spi, &msg);
 }
 
@@ -239,6 +241,7 @@ static void oa_tc6_prepare_ctrl_spi_buf(struct oa_tc6 *tc6, u32 address,
 
 static int oa_tc6_check_ctrl_write_reply(struct oa_tc6 *tc6, u8 size)
 {
+	dev_info(&tc6->spi->dev, "oa_tc6_check_ctrl_write_reply(): start\n");
 	u8 *tx_buf = tc6->spi_ctrl_tx_buf;
 	u8 *rx_buf = tc6->spi_ctrl_rx_buf;
 
@@ -247,8 +250,11 @@ static int oa_tc6_check_ctrl_write_reply(struct oa_tc6 *tc6, u8 size)
 	/* The echoed control write must match with the one that was
 	 * transmitted.
 	 */
-	if (memcmp(tx_buf, rx_buf, size - OA_TC6_CTRL_IGNORED_SIZE))
+	if (memcmp(tx_buf, rx_buf, size - OA_TC6_CTRL_IGNORED_SIZE)) {
+		// TODO: Maybe we should print the buffers huh
+		dev_info(&tc6->spi->dev, "oa_tc6_check_ctrl_write_reply(): yup returning -EPROTO\n");
 		return -EPROTO;
+	}
 
 	return 0;
 }
@@ -280,6 +286,7 @@ static void oa_tc6_copy_ctrl_read_data(struct oa_tc6 *tc6, u32 value[],
 static int oa_tc6_perform_ctrl(struct oa_tc6 *tc6, u32 address, u32 value[],
 			       u8 length, enum oa_tc6_register_op reg_op)
 {
+	dev_info(&tc6->spi->dev, "oa_tc6_perform_ctrl(): start\n");
 	u16 size;
 	int ret;
 
@@ -288,6 +295,7 @@ static int oa_tc6_perform_ctrl(struct oa_tc6 *tc6, u32 address, u32 value[],
 
 	size = oa_tc6_calculate_ctrl_buf_size(length);
 
+	dev_info(&tc6->spi->dev, "oa_tc6_perform_ctrl(): before oa_tc6_spi_transfer()\n");
 	/* Perform SPI transfer */
 	ret = oa_tc6_spi_transfer(tc6, OA_TC6_CTRL_HEADER, size);
 	if (ret) {
@@ -295,15 +303,20 @@ static int oa_tc6_perform_ctrl(struct oa_tc6 *tc6, u32 address, u32 value[],
 			ret);
 		return ret;
 	}
+	dev_info(&tc6->spi->dev, "oa_tc6_perform_ctrl(): after oa_tc6_spi_transfer()\n");
 
 	/* Check echoed/received control write command reply for errors */
-	if (reg_op == OA_TC6_CTRL_REG_WRITE)
+	if (reg_op == OA_TC6_CTRL_REG_WRITE) {
+		dev_info(&tc6->spi->dev, "oa_tc6_perform_ctrl(): returning oa_tc6_check_ctrl_write_reply()\n");
 		return oa_tc6_check_ctrl_write_reply(tc6, size);
+	}
 
+	dev_info(&tc6->spi->dev, "oa_tc6_perform_ctrl(): before oa_tc6_check_ctrl_read_reply()\n");
 	/* Check echoed/received control read command reply for errors */
 	ret = oa_tc6_check_ctrl_read_reply(tc6, size);
 	if (ret)
 		return ret;
+	dev_info(&tc6->spi->dev, "oa_tc6_perform_ctrl(): after oa_tc6_check_ctrl_read_reply()\n");
 
 	oa_tc6_copy_ctrl_read_data(tc6, value, length);
 
@@ -368,6 +381,7 @@ EXPORT_SYMBOL_GPL(oa_tc6_read_register);
 int oa_tc6_write_registers(struct oa_tc6 *tc6, u32 address, u32 value[],
 			   u8 length)
 {
+	dev_info(&tc6->spi->dev, "oa_tc6_write_registers(): start\n");
 	int ret;
 
 	if (!length || length > OA_TC6_CTRL_MAX_REGISTERS) {
@@ -375,6 +389,7 @@ int oa_tc6_write_registers(struct oa_tc6 *tc6, u32 address, u32 value[],
 		return -EINVAL;
 	}
 
+	dev_info(&tc6->spi->dev, "oa_tc6_write_registers(): returning oa_tc6_perform_ctrl() WRITE\n");
 	mutex_lock(&tc6->spi_ctrl_lock);
 	ret = oa_tc6_perform_ctrl(tc6, address, value, length,
 				  OA_TC6_CTRL_REG_WRITE);
@@ -600,13 +615,17 @@ static int oa_tc6_read_status0(struct oa_tc6 *tc6)
 
 static int oa_tc6_sw_reset_macphy(struct oa_tc6 *tc6)
 {
+	dev_info(&tc6->spi->dev, "oa_tc6_sw_reset_macphy(): start\n");
 	u32 regval = RESET_SWRESET;
 	int ret;
 
+	dev_info(&tc6->spi->dev, "oa_tc6_sw_reset_macphy(): before oa_tc6_write_register() RESET\n");
 	ret = oa_tc6_write_register(tc6, OA_TC6_REG_RESET, regval);
 	if (ret)
 		return ret;
+	dev_info(&tc6->spi->dev, "oa_tc6_sw_reset_macphy(): after oa_tc6_write_register()\n");
 
+	dev_info(&tc6->spi->dev, "oa_tc6_sw_reset_macphy(): before readx_poll_timeout()\n");
 	/* Poll for soft reset complete for every 1ms until 1s timeout */
 	ret = readx_poll_timeout(oa_tc6_read_status0, tc6, regval,
 				 regval & STATUS0_RESETC,
@@ -614,7 +633,9 @@ static int oa_tc6_sw_reset_macphy(struct oa_tc6 *tc6)
 				 STATUS0_RESETC_POLL_TIMEOUT);
 	if (ret)
 		return -ENODEV;
+	dev_info(&tc6->spi->dev, "oa_tc6_sw_reset_macphy(): after readx_poll_timeout()\n");
 
+	dev_info(&tc6->spi->dev, "oa_tc6_sw_reset_macphy(): returning oa_tc6_write_register() STATUS0\n");
 	/* Clear the reset complete status */
 	return oa_tc6_write_register(tc6, OA_TC6_REG_STATUS0, regval);
 }
@@ -1247,10 +1268,13 @@ struct oa_tc6 *oa_tc6_init(struct spi_device *spi, struct net_device *netdev)
 	mutex_init(&tc6->spi_ctrl_lock);
 	spin_lock_init(&tc6->tx_skb_lock);
 
+	dev_info(&tc6->spi->dev, "oa_tc6_init(): start\n");
+	dev_info(&tc6->spi->dev, "oa_tc6_init(): before spi_setup()\n");
 	/* Set the SPI controller to pump at realtime priority */
 	tc6->spi->rt = true;
 	if (spi_setup(tc6->spi) < 0)
 		return NULL;
+	dev_info(&tc6->spi->dev, "oa_tc6_init(): after spi_setup()\n");
 
 	tc6->spi_ctrl_tx_buf = devm_kzalloc(&tc6->spi->dev,
 					    OA_TC6_CTRL_SPI_BUF_SIZE,
@@ -1276,12 +1300,14 @@ struct oa_tc6 *oa_tc6_init(struct spi_device *spi, struct net_device *netdev)
 	if (!tc6->spi_data_rx_buf)
 		return NULL;
 
+	dev_info(&tc6->spi->dev, "oa_tc6_init(): before oa_tc6_sw_reset_macphy() <----\n");
 	ret = oa_tc6_sw_reset_macphy(tc6);
 	if (ret) {
 		dev_err(&tc6->spi->dev,
 			"MAC-PHY software reset failed: %d\n", ret);
 		return NULL;
 	}
+	dev_info(&tc6->spi->dev, "oa_tc6_init(): after oa_tc6_sw_reset_macphy() <----\n");
 
 	ret = oa_tc6_unmask_macphy_error_interrupts(tc6);
 	if (ret) {

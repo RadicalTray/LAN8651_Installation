@@ -13,7 +13,6 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "okay";
-			/* Settings for the lan865x click board connected with Mikro Bus 1 */
 			eth1: lan865x@0{
 				compatible = "microchip,lan8651", "microchip,lan8650";
 				reg = <0>; /* CE0 */

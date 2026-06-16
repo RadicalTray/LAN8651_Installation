@@ -332,6 +332,7 @@ static const struct net_device_ops lan865x_netdev_ops = {
 
 static int lan865x_probe(struct spi_device *spi)
 {
+	dev_info(&spi->dev, "lan865x_probe(): start\n");
 	struct net_device *netdev;
 	struct lan865x_priv *priv;
 	int ret;
@@ -346,11 +347,13 @@ static int lan865x_probe(struct spi_device *spi)
 	spi_set_drvdata(spi, priv);
 	INIT_WORK(&priv->multicast_work, lan865x_multicast_work_handler);
 
+	dev_info(&spi->dev, "lan865x_probe(): before oa_tc6_init()\n");
 	priv->tc6 = oa_tc6_init(spi, netdev);
 	if (!priv->tc6) {
 		ret = -ENODEV;
 		goto free_netdev;
 	}
+	dev_info(&spi->dev, "lan865x_probe(): after oa_tc6_init()\n");
 
 	/* LAN865x Rev.B0/B1 configuration parameters from AN1760
 	 * As per the Configuration Application Note AN1760 published in the
