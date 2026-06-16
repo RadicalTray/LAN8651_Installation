@@ -4,7 +4,9 @@ endif
 
 obj-m := microchip_t1s.o
 obj-m += lan865x_t1s.o
+obj-m += lan865x_t1s_dummy.o
 lan865x_t1s-y := lan865x.o oa_tc6.o
+lan865x_t1s_dummy-y := lan865x_dummy.o oa_tc6_dummy.o
 
 all:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
