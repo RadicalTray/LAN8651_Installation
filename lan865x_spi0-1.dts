@@ -13,9 +13,9 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "okay";
-			eth1: lan865x@0{
+			eth1: lan865x@1{
 				compatible = "microchip,lan8651", "microchip,lan8650";
-				reg = <0>; /* CE0 */
+				reg = <1>; /* CE1 */
 				pinctrl-names = "default";
 				pinctrl-0 = <&eth1_pins>;
 				interrupt-parent = <&gpio>;
@@ -27,7 +27,7 @@
 		};
 	};
 	fragment@1 {
-		target = <&spidev0>;
+		target = <&spidev1>;
 		__overlay__ {
 			status = "disabled";
 		};
